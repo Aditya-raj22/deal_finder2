@@ -38,11 +38,28 @@ print(f"✓ Run: {findall_run.findall_id}")
 
 # Poll for completion
 print("Waiting for results...")
+max_wait = 1800  # 30 min timeout
+start = time.time()
 while True:
     run = client.beta.findall.retrieve(findall_run.findall_id, betas=["findall-2025-09-15"])
-    if run.status.status == 'completed':
-        print(f"✓ Completed! Matched: {run.status.metrics.matched_candidates_count}")
+    status = run.status.status
+
+    if status == 'completed':
+        print(f"\n✓ Completed! Matched: {run.status.metrics.matched_candidates_count}")
         break
+    elif status == 'failed':
+        print(f"\n✗ Run failed: {run.status}")
+        exit(1)
+
+    elapsed = int(time.time() - start)
+    metrics = getattr(run.status, 'metrics', None)
+    gen = metrics.generated_candidates_count if metrics else 0
+    print(f"  [{elapsed}s] Status: {status} | Generated: {gen}", end='\r')
+
+    if elapsed > max_wait:
+        print(f"\n✗ Timeout after {max_wait}s")
+        exit(1)
+
     time.sleep(10)
 
 # Retrieve results
