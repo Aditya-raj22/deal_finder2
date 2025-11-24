@@ -1,5 +1,5 @@
 """Find Phase 2/3 trial results with positive outcomes in I&I since 2021."""
-import os, time, json
+import os, time, json, glob
 from datetime import datetime, date, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -48,12 +48,22 @@ result = client.beta.findall.result(findall_run.findall_id, betas=["findall-2025
 matched = [c for c in result.model_dump().get('candidates', []) if c.get('match_status') == 'matched']
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
-# Save raw
+# Save raw (checkpoint 1)
 with open(OUTPUT_DIR / f"raw_{timestamp}.json", 'w') as f:
     json.dump({'run_id': findall_run.findall_id, 'matched': len(matched), 'candidates': matched}, f, indent=2, default=str)
+print(f"✓ Checkpoint: Saved raw to {OUTPUT_DIR / f'raw_{timestamp}.json'}")
 
-# Parse with OpenAI
+# Parse with OpenAI - check for existing checkpoint
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
+existing = sorted(glob.glob(str(OUTPUT_DIR / "openai_responses_*.json")), reverse=True)
+if existing:
+    responses_file = Path(existing[0])
+    with open(responses_file, 'r') as f:
+        openai_responses = json.load(f)
+    print(f"✓ Checkpoint: Loaded {len(openai_responses)} cached responses from {responses_file.name}")
+else:
+    responses_file = OUTPUT_DIR / f"openai_responses_{timestamp}.json"
+    openai_responses = {}
 
 def parse_with_openai(candidate):
     prompt = f"""Extract fields from clinical trial results data. Return JSON with null for missing data.
@@ -86,8 +96,17 @@ trials = []
 print(f"Parsing {len(matched)} trials...")
 for i, c in enumerate(matched):
     try:
+        cid = c.get('candidate_id', f'candidate_{i}')
         print(f"[{i+1}/{len(matched)}] {c.get('name', 'Unknown')[:50]}...", end='\r')
-        p = parse_with_openai(c)
+
+        # Check checkpoint (checkpoint 2)
+        if cid in openai_responses:
+            p = openai_responses[cid]
+        else:
+            p = parse_with_openai(c)
+            openai_responses[cid] = p
+            with open(responses_file, 'w') as f:
+                json.dump(openai_responses, f, indent=2)
         trials.append(Deal(
             date_announced=parse_date(p.get('announcement_date')),
             target=(p.get('company_name') or c.get('name', 'Unknown'))[:200],
