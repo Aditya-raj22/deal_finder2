@@ -9,7 +9,7 @@ from deal_finder.models import Deal, DealTypeDetailed
 from deal_finder.output import ExcelWriter
 
 # Config
-PARALLEL_API_KEY = os.getenv("PARALLEL_API_KEY", "")
+PARALLEL_API_KEY = os.getenv("PARALLEL_API_KEY_LATE_STAGE", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OUTPUT_DIR = Path("output/late_stage_deals")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

@@ -9,7 +9,7 @@ from deal_finder.models import Deal
 from deal_finder.output import ExcelWriter
 
 # Config
-PARALLEL_API_KEY = os.getenv("PARALLEL_API_KEY", "")
+PARALLEL_API_KEY = os.getenv("PARALLEL_API_KEY_TRIALS", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OUTPUT_DIR = Path("output/trial_results_ph23")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
