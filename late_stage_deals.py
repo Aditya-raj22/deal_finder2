@@ -7,8 +7,10 @@ from parallel import Parallel
 from openai import OpenAI
 from deal_finder.models import Deal, DealTypeDetailed
 from deal_finder.output import ExcelWriter
+from dotenv import load_dotenv
 
 # Config
+load_dotenv()
 PARALLEL_API_KEY = os.getenv("PARALLEL_API_KEY_LATE_STAGE", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OUTPUT_DIR = Path("output/late_stage_deals")
